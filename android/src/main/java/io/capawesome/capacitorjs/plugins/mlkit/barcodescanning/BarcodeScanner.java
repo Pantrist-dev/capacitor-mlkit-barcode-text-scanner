@@ -409,7 +409,7 @@ public class BarcodeScanner implements ImageAnalysis.Analyzer {
                 handleScanError(exception);
             });
         tasks.add(barcodeTask);
-        Task<Text> textTask = recognizeTextIfDue(inputImage, imageSize);
+        Task<Text> textTask = recognizeTextIfDue(inputImage, imageSize, imageProxy.getImageInfo().getRotationDegrees());
         if (textTask != null) {
             tasks.add(textTask);
         }
@@ -425,7 +425,7 @@ public class BarcodeScanner implements ImageAnalysis.Analyzer {
      * interval since the last pass has elapsed. Returns null otherwise.
      */
     @Nullable
-    private Task<Text> recognizeTextIfDue(@NonNull InputImage inputImage, @NonNull Point imageSize) {
+    private Task<Text> recognizeTextIfDue(@NonNull InputImage inputImage, @NonNull Point imageSize, int rotationDegrees) {
         if (!isTextRecognitionEnabled || scanSettings == null) {
             return null;
         }
@@ -447,7 +447,7 @@ public class BarcodeScanner implements ImageAnalysis.Analyzer {
                 if (text.getTextBlocks().isEmpty()) {
                     return;
                 }
-                plugin.notifyTextScannedListener(text, imageSize);
+                plugin.notifyTextScannedListener(text, imageSize, rotationDegrees);
             })
             .addOnFailureListener(exception -> {
                 // Not reported as a scan error: barcode scanning keeps working without text recognition.

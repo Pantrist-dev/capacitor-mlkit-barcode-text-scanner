@@ -523,10 +523,10 @@ public class BarcodeScannerPlugin extends Plugin {
         }
     }
 
-    public void notifyTextScannedListener(Text text, Point imageSize) {
+    public void notifyTextScannedListener(Text text, Point imageSize, int rotationDegrees) {
         try {
             Point screenSize = this.getScreenSize();
-            JSObject result = BarcodeScannerHelper.createTextResult(text, imageSize, screenSize);
+            JSObject result = BarcodeScannerHelper.createTextResult(text, imageSize, screenSize, rotationDegrees);
             notifyListeners(TEXT_SCANNED_EVENT, result);
         } catch (Exception exception) {
             Logger.error(TAG, exception.getMessage(), exception);

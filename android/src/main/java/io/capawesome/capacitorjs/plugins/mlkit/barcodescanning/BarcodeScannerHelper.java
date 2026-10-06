@@ -78,19 +78,33 @@ public class BarcodeScannerHelper {
         return result;
     }
 
-    public static JSObject createTextResult(@NonNull Text text, @NonNull Point imageSize, @NonNull Point screenSize) {
+    /**
+     * Unlike barcode corner points, text corner points come in the coordinate space of the unrotated camera
+     * frame, so they are turned upright before they get the same normalization as barcode corner points.
+     */
+    public static JSObject createTextResult(@NonNull Text text, @NonNull Point imageSize, @NonNull Point screenSize, int rotationDegrees) {
         JSArray blocksResult = new JSArray();
         for (Text.TextBlock block : text.getTextBlocks()) {
             JSArray linesResult = new JSArray();
             for (Text.Line line : block.getLines()) {
                 JSObject lineResult = new JSObject();
                 lineResult.put("text", line.getText());
-                putNormalizedCornerPoints(lineResult, line.getCornerPoints(), imageSize, screenSize);
+                putNormalizedCornerPoints(
+                    lineResult,
+                    rotateCornerPoints(line.getCornerPoints(), imageSize, rotationDegrees),
+                    imageSize,
+                    screenSize
+                );
                 linesResult.put(lineResult);
             }
             JSObject blockResult = new JSObject();
             blockResult.put("text", block.getText());
-            putNormalizedCornerPoints(blockResult, block.getCornerPoints(), imageSize, screenSize);
+            putNormalizedCornerPoints(
+                blockResult,
+                rotateCornerPoints(block.getCornerPoints(), imageSize, rotationDegrees),
+                imageSize,
+                screenSize
+            );
             blockResult.put("lines", linesResult);
             blocksResult.put(blockResult);
         }
@@ -99,6 +113,35 @@ public class BarcodeScannerHelper {
         result.put("text", text.getText());
         result.put("blocks", blocksResult);
         return result;
+    }
+
+    /**
+     * Rotates points of a frame of the given size clockwise by the given degrees, the rotation that makes the
+     * camera frame upright.
+     */
+    @Nullable
+    private static Point[] rotateCornerPoints(@Nullable Point[] cornerPoints, @NonNull Point imageSize, int rotationDegrees) {
+        if (cornerPoints == null) {
+            return null;
+        }
+        Point[] rotatedCornerPoints = new Point[cornerPoints.length];
+        for (int i = 0; i < cornerPoints.length; i++) {
+            Point point = cornerPoints[i];
+            switch (rotationDegrees) {
+                case 90:
+                    rotatedCornerPoints[i] = new Point(imageSize.y - point.y, point.x);
+                    break;
+                case 180:
+                    rotatedCornerPoints[i] = new Point(imageSize.x - point.x, imageSize.y - point.y);
+                    break;
+                case 270:
+                    rotatedCornerPoints[i] = new Point(point.y, imageSize.x - point.x);
+                    break;
+                default:
+                    rotatedCornerPoints[i] = new Point(point.x, point.y);
+            }
+        }
+        return rotatedCornerPoints;
     }
 
     private static void putNormalizedCornerPoints(
