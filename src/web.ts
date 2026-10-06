@@ -14,12 +14,14 @@ import type {
   GetZoomRatioResult,
   IsGoogleBarcodeScannerModuleAvailableResult,
   IsSupportedResult,
+  IsTextRecognitionAvailableResult,
   IsTorchAvailableResult,
   IsTorchEnabledResult,
   PermissionStatus,
   ReadBarcodesFromImageOptions,
   ReadBarcodesFromImageResult,
   ScanResult,
+  SetTextRecognitionEnabledOptions,
   SetZoomRatioOptions,
   StartScanOptions,
 } from './definitions';
@@ -157,6 +159,16 @@ export class BarcodeScannerWeb
   }
 
   async getMaxZoomRatio(): Promise<GetMaxZoomRatioResult> {
+    throw this.createUnimplementedException();
+  }
+
+  async isTextRecognitionAvailable(): Promise<IsTextRecognitionAvailableResult> {
+    return { available: false };
+  }
+
+  async setTextRecognitionEnabled(
+    _options: SetTextRecognitionEnabledOptions,
+  ): Promise<void> {
     throw this.createUnimplementedException();
   }
 

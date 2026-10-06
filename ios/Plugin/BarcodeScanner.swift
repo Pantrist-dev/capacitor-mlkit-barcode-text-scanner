@@ -5,9 +5,12 @@ import Foundation
 import AVFoundation
 import Capacitor
 import MLKitBarcodeScanning
+import MLKitTextRecognition
 import MLKitVision
 
 typealias MLKitBarcodeScanner = MLKitBarcodeScanning.BarcodeScanner
+public typealias MLKitText = MLKitTextRecognition.Text
+public typealias MLKitTextRecognizer = MLKitTextRecognition.TextRecognizer
 
 @objc public class BarcodeScanner: NSObject {
 
@@ -63,6 +66,17 @@ typealias MLKitBarcodeScanner = MLKitBarcodeScanning.BarcodeScanner
         }
         self.scanCompletionHandler = nil
         self.barcodeRawValueVotes.removeAll()
+    }
+
+    public func setTextRecognitionEnabled(_ enabled: Bool, completion: @escaping (String?) -> Void) {
+        DispatchQueue.main.async {
+            guard let cameraView = self.cameraView else {
+                completion(self.plugin.errorNoActiveScanSession)
+                return
+            }
+            cameraView.setTextRecognitionEnabled(enabled)
+            completion(nil)
+        }
     }
 
     @objc public func readBarcodesFromImage(imageUrl: URL, settings: ScanSettings, completion: @escaping ([Barcode]?, String?) -> Void) {
@@ -321,6 +335,10 @@ extension BarcodeScanner: BarcodeScannerViewDelegate {
                 self.handleScannedBarcodes(barcodes: barcodesWithEnoughVotes, imageSize: imageSize, videoOrientation: videoOrientation)
             }
         }
+    }
+
+    public func onTextDetected(text: MLKitText, imageSize: CGSize, videoOrientation: AVCaptureVideoOrientation?) {
+        plugin.notifyTextScannedListener(text: text, imageSize: imageSize, videoOrientation: videoOrientation)
     }
 
     public func onCancel() {

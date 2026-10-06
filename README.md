@@ -425,12 +425,15 @@ If you can't see the camera view, make sure all elements in the DOM are not visi
 * [`getZoomRatio()`](#getzoomratio)
 * [`getMinZoomRatio()`](#getminzoomratio)
 * [`getMaxZoomRatio()`](#getmaxzoomratio)
+* [`isTextRecognitionAvailable()`](#istextrecognitionavailable)
+* [`setTextRecognitionEnabled(...)`](#settextrecognitionenabled)
 * [`openSettings()`](#opensettings)
 * [`isGoogleBarcodeScannerModuleAvailable()`](#isgooglebarcodescannermoduleavailable)
 * [`installGoogleBarcodeScannerModule()`](#installgooglebarcodescannermodule)
 * [`checkPermissions()`](#checkpermissions)
 * [`requestPermissions()`](#requestpermissions)
 * [`addListener('barcodesScanned', ...)`](#addlistenerbarcodesscanned-)
+* [`addListener('textScanned', ...)`](#addlistenertextscanned-)
 * [`addListener('scanError', ...)`](#addlistenerscanerror-)
 * [`addListener('googleBarcodeScannerModuleInstallProgress', ...)`](#addlistenergooglebarcodescannermoduleinstallprogress-)
 * [`removeAllListeners()`](#removealllisteners)
@@ -688,6 +691,46 @@ Only available on Android and iOS.
 --------------------
 
 
+### isTextRecognitionAvailable()
+
+```typescript
+isTextRecognitionAvailable() => Promise<IsTextRecognitionAvailableResult>
+```
+
+Returns whether live text recognition (see <a href="#startscanoptions">`StartScanOptions.textRecognition`</a>)
+is available on this platform.
+
+**Returns:** <code>Promise&lt;<a href="#istextrecognitionavailableresult">IsTextRecognitionAvailableResult</a>&gt;</code>
+
+**Since:** 8.3.0
+
+--------------------
+
+
+### setTextRecognitionEnabled(...)
+
+```typescript
+setTextRecognitionEnabled(options: SetTextRecognitionEnabledOptions) => Promise<void>
+```
+
+Turn live text recognition on or off during an active scan session,
+without restarting the camera.
+
+Barcode scanning keeps running either way. Turn text recognition off
+as soon as you have what you need: it is considerably more expensive
+than barcode scanning.
+
+Only available on Android and iOS.
+
+| Param         | Type                                                                                          |
+| ------------- | --------------------------------------------------------------------------------------------- |
+| **`options`** | <code><a href="#settextrecognitionenabledoptions">SetTextRecognitionEnabledOptions</a></code> |
+
+**Since:** 8.3.0
+
+--------------------
+
+
 ### openSettings()
 
 ```typescript
@@ -791,6 +834,32 @@ Called when barcodes are scanned.
 --------------------
 
 
+### addListener('textScanned', ...)
+
+```typescript
+addListener(eventName: 'textScanned', listenerFunc: (event: TextScannedEvent) => void) => Promise<PluginListenerHandle>
+```
+
+Called when text is recognized in the camera preview.
+
+Only emitted while text recognition is enabled (see
+`StartScanOptions.textRecognition` and `setTextRecognitionEnabled()`),
+and only for frames that contain text.
+
+Only available on Android and iOS.
+
+| Param              | Type                                                                              |
+| ------------------ | --------------------------------------------------------------------------------- |
+| **`eventName`**    | <code>'textScanned'</code>                                                        |
+| **`listenerFunc`** | <code>(event: <a href="#textscannedevent">TextScannedEvent</a>) =&gt; void</code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+**Since:** 8.3.0
+
+--------------------
+
+
 ### addListener('scanError', ...)
 
 ```typescript
@@ -853,13 +922,15 @@ Remove all listeners for this plugin.
 
 #### StartScanOptions
 
-| Prop                                 | Type                                              | Description                                                                                                                                                                                                           | Default                             | Since |
-| ------------------------------------ | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | ----- |
-| **`formats`**                        | <code>BarcodeFormat[]</code>                      | Improve the speed of the barcode scanner by configuring the barcode formats to scan for. Only available on Android and iOS.                                                                                           |                                     | 0.0.1 |
-| **`lensFacing`**                     | <code><a href="#lensfacing">LensFacing</a></code> | Configure the camera (front or back) to use.                                                                                                                                                                          |                                     | 0.0.1 |
-| **`resolution`**                     | <code><a href="#resolution">Resolution</a></code> | Configure the resolution of the captured image that is used for barcode scanning. If the resolution is not supported by the device, the closest supported resolution will be used. Only available on Android and iOS. | <code>Resolution['1280x720']</code> | 7.0.0 |
-| **`enableMultitaskingCameraAccess`** | <code>boolean</code>                              | Allow camera usage on iPad while in multitasking mode. Only available on iOS (16.0+).                                                                                                                                 | <code>false</code>                  | 7.5.0 |
-| **`videoElement`**                   | <code>HTMLVideoElement</code>                     | The HTML video element to use for the camera preview. Only available on web.                                                                                                                                          |                                     | 7.1.0 |
+| Prop                                 | Type                                              | Description                                                                                                                                                                                                                                          | Default                             | Since |
+| ------------------------------------ | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | ----- |
+| **`formats`**                        | <code>BarcodeFormat[]</code>                      | Improve the speed of the barcode scanner by configuring the barcode formats to scan for. Only available on Android and iOS.                                                                                                                          |                                     | 0.0.1 |
+| **`lensFacing`**                     | <code><a href="#lensfacing">LensFacing</a></code> | Configure the camera (front or back) to use.                                                                                                                                                                                                         |                                     | 0.0.1 |
+| **`resolution`**                     | <code><a href="#resolution">Resolution</a></code> | Configure the resolution of the captured image that is used for barcode scanning. If the resolution is not supported by the device, the closest supported resolution will be used. Only available on Android and iOS.                                | <code>Resolution['1280x720']</code> | 7.0.0 |
+| **`enableMultitaskingCameraAccess`** | <code>boolean</code>                              | Allow camera usage on iPad while in multitasking mode. Only available on iOS (16.0+).                                                                                                                                                                | <code>false</code>                  | 7.5.0 |
+| **`textRecognition`**                | <code>boolean</code>                              | Also run ML Kit text recognition (Latin script) on the camera frames of this scan session and emit `textScanned` events. Can be toggled later with `setTextRecognitionEnabled()`. Only available on Android and iOS.                                 | <code>false</code>                  | 8.3.0 |
+| **`textRecognitionInterval`**        | <code>number</code>                               | The minimum time in milliseconds between two text recognition passes. Text recognition is a lot slower than barcode scanning, so it does not run on every frame. Lower values react faster but cost more battery. Only available on Android and iOS. | <code>250</code>                    | 8.3.0 |
+| **`videoElement`**                   | <code>HTMLVideoElement</code>                     | The HTML video element to use for the camera preview. Only available on web.                                                                                                                                                                         |                                     | 7.1.0 |
 
 
 #### ReadBarcodesFromImageResult
@@ -1081,6 +1152,20 @@ Remove all listeners for this plugin.
 | **`zoomRatio`** | <code>number</code> | The maximum zoom ratio. | 5.4.0 |
 
 
+#### IsTextRecognitionAvailableResult
+
+| Prop            | Type                 | Description                                        | Since |
+| --------------- | -------------------- | -------------------------------------------------- | ----- |
+| **`available`** | <code>boolean</code> | Whether or not live text recognition is available. | 8.3.0 |
+
+
+#### SetTextRecognitionEnabledOptions
+
+| Prop          | Type                 | Description                                               | Since |
+| ------------- | -------------------- | --------------------------------------------------------- | ----- |
+| **`enabled`** | <code>boolean</code> | Whether text recognition should run on the camera frames. | 8.3.0 |
+
+
 #### IsGoogleBarcodeScannerModuleAvailableResult
 
 | Prop            | Type                 | Description                                                                           | Since |
@@ -1107,6 +1192,35 @@ Remove all listeners for this plugin.
 | Prop           | Type                   | Description            | Since |
 | -------------- | ---------------------- | ---------------------- | ----- |
 | **`barcodes`** | <code>Barcode[]</code> | The detected barcodes. | 6.2.0 |
+
+
+#### TextScannedEvent
+
+| Prop         | Type                     | Description                                                             | Since |
+| ------------ | ------------------------ | ----------------------------------------------------------------------- | ----- |
+| **`text`**   | <code>string</code>      | The full recognized text of the frame, blocks separated by line breaks. | 8.3.0 |
+| **`blocks`** | <code>TextBlock[]</code> | The recognized text blocks (paragraphs) of the frame.                   | 8.3.0 |
+
+
+#### TextBlock
+
+A block of text (roughly a paragraph) recognized in a camera frame.
+
+| Prop               | Type                                                                                  | Description                                                                                                                                                                                         | Since |
+| ------------------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| **`text`**         | <code>string</code>                                                                   | The recognized text of the block.                                                                                                                                                                   | 8.3.0 |
+| **`cornerPoints`** | <code>[[number, number], [number, number], [number, number], [number, number]]</code> | The four corner points of the block in clockwise order starting with top-left, in the same coordinate space as <a href="#barcode">`Barcode</a>.cornerPoints` (screen pixels of the camera preview). | 8.3.0 |
+| **`lines`**        | <code>TextLine[]</code>                                                               | The lines of the block.                                                                                                                                                                             | 8.3.0 |
+
+
+#### TextLine
+
+A single line of text recognized in a camera frame.
+
+| Prop               | Type                                                                                  | Description                                                                                                                                                                                        | Since |
+| ------------------ | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| **`text`**         | <code>string</code>                                                                   | The recognized text of the line.                                                                                                                                                                   | 8.3.0 |
+| **`cornerPoints`** | <code>[[number, number], [number, number], [number, number], [number, number]]</code> | The four corner points of the line in clockwise order starting with top-left, in the same coordinate space as <a href="#barcode">`Barcode</a>.cornerPoints` (screen pixels of the camera preview). | 8.3.0 |
 
 
 #### ScanErrorEvent

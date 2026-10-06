@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.text.Text;
 import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -75,6 +76,49 @@ public class BarcodeScannerHelper {
             result.put("wifi", extractWifiProperties(barcode.getWifi()));
         }
         return result;
+    }
+
+    public static JSObject createTextResult(@NonNull Text text, @NonNull Point imageSize, @NonNull Point screenSize) {
+        JSArray blocksResult = new JSArray();
+        for (Text.TextBlock block : text.getTextBlocks()) {
+            JSArray linesResult = new JSArray();
+            for (Text.Line line : block.getLines()) {
+                JSObject lineResult = new JSObject();
+                lineResult.put("text", line.getText());
+                putNormalizedCornerPoints(lineResult, line.getCornerPoints(), imageSize, screenSize);
+                linesResult.put(lineResult);
+            }
+            JSObject blockResult = new JSObject();
+            blockResult.put("text", block.getText());
+            putNormalizedCornerPoints(blockResult, block.getCornerPoints(), imageSize, screenSize);
+            blockResult.put("lines", linesResult);
+            blocksResult.put(blockResult);
+        }
+
+        JSObject result = new JSObject();
+        result.put("text", text.getText());
+        result.put("blocks", blocksResult);
+        return result;
+    }
+
+    private static void putNormalizedCornerPoints(
+        @NonNull JSObject target,
+        @Nullable Point[] cornerPoints,
+        @NonNull Point imageSize,
+        @NonNull Point screenSize
+    ) {
+        if (cornerPoints == null || cornerPoints.length != 4) {
+            return;
+        }
+        Point[] normalizedCornerPoints = normalizeCornerPoints(cornerPoints, imageSize, screenSize);
+        JSArray cornerPointsResult = new JSArray();
+        for (Point cornerPoint : normalizedCornerPoints) {
+            JSArray cornerPointResult = new JSArray();
+            cornerPointResult.put(cornerPoint.x);
+            cornerPointResult.put(cornerPoint.y);
+            cornerPointsResult.put(cornerPointResult);
+        }
+        target.put("cornerPoints", cornerPointsResult);
     }
 
     public static int[] convertStringsToBarcodeScannerFormats(String[] values) throws JSONException {

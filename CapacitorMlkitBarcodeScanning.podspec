@@ -14,6 +14,7 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = '15.0'
   s.dependency 'Capacitor'
   s.dependency 'GoogleMLKit/BarcodeScanning', '~> 8.0.0'
+  s.dependency 'GoogleMLKit/TextRecognition', '~> 8.0.0'
   s.swift_version = '5.1'
   s.static_framework = true
 end

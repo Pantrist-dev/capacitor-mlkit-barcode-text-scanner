@@ -21,4 +21,8 @@ public class ScanSettings {
     public Integer lensFacing;
 
     public Size resolution;
+
+    public boolean textRecognition = false;
+
+    public int textRecognitionInterval = 250;
 }

@@ -120,6 +120,28 @@ export interface BarcodeScannerPlugin {
    */
   getMaxZoomRatio(): Promise<GetMaxZoomRatioResult>;
   /**
+   * Returns whether live text recognition (see `StartScanOptions.textRecognition`)
+   * is available on this platform.
+   *
+   * @since 8.3.0
+   */
+  isTextRecognitionAvailable(): Promise<IsTextRecognitionAvailableResult>;
+  /**
+   * Turn live text recognition on or off during an active scan session,
+   * without restarting the camera.
+   *
+   * Barcode scanning keeps running either way. Turn text recognition off
+   * as soon as you have what you need: it is considerably more expensive
+   * than barcode scanning.
+   *
+   * Only available on Android and iOS.
+   *
+   * @since 8.3.0
+   */
+  setTextRecognitionEnabled(
+    options: SetTextRecognitionEnabledOptions,
+  ): Promise<void>;
+  /**
    * Open the settings of the app so that the user can grant the camera permission.
    *
    * Only available on Android and iOS.
@@ -169,6 +191,21 @@ export interface BarcodeScannerPlugin {
   addListener(
     eventName: 'barcodesScanned',
     listenerFunc: (event: BarcodesScannedEvent) => void,
+  ): Promise<PluginListenerHandle>;
+  /**
+   * Called when text is recognized in the camera preview.
+   *
+   * Only emitted while text recognition is enabled (see
+   * `StartScanOptions.textRecognition` and `setTextRecognitionEnabled()`),
+   * and only for frames that contain text.
+   *
+   * Only available on Android and iOS.
+   *
+   * @since 8.3.0
+   */
+  addListener(
+    eventName: 'textScanned',
+    listenerFunc: (event: TextScannedEvent) => void,
   ): Promise<PluginListenerHandle>;
   /**
    * Called when an error occurs during the scan.
@@ -241,6 +278,30 @@ export interface StartScanOptions {
    * @default false
    */
   enableMultitaskingCameraAccess?: boolean;
+  /**
+   * Also run ML Kit text recognition (Latin script) on the camera frames of
+   * this scan session and emit `textScanned` events.
+   *
+   * Can be toggled later with `setTextRecognitionEnabled()`.
+   *
+   * Only available on Android and iOS.
+   *
+   * @since 8.3.0
+   * @default false
+   */
+  textRecognition?: boolean;
+  /**
+   * The minimum time in milliseconds between two text recognition passes.
+   *
+   * Text recognition is a lot slower than barcode scanning, so it does not
+   * run on every frame. Lower values react faster but cost more battery.
+   *
+   * Only available on Android and iOS.
+   *
+   * @since 8.3.0
+   * @default 250
+   */
+  textRecognitionInterval?: number;
   /**
    * The HTML video element to use for the camera preview.
    *
@@ -459,6 +520,108 @@ export interface BarcodesScannedEvent {
    * @since 6.2.0
    */
   barcodes: Barcode[];
+}
+
+/**
+ * @since 8.3.0
+ */
+export interface IsTextRecognitionAvailableResult {
+  /**
+   * Whether or not live text recognition is available.
+   *
+   * @since 8.3.0
+   */
+  available: boolean;
+}
+
+/**
+ * @since 8.3.0
+ */
+export interface SetTextRecognitionEnabledOptions {
+  /**
+   * Whether text recognition should run on the camera frames.
+   *
+   * @since 8.3.0
+   */
+  enabled: boolean;
+}
+
+/**
+ * @since 8.3.0
+ */
+export interface TextScannedEvent {
+  /**
+   * The full recognized text of the frame, blocks separated by line breaks.
+   *
+   * @since 8.3.0
+   */
+  text: string;
+  /**
+   * The recognized text blocks (paragraphs) of the frame.
+   *
+   * @since 8.3.0
+   */
+  blocks: TextBlock[];
+}
+
+/**
+ * A block of text (roughly a paragraph) recognized in a camera frame.
+ *
+ * @since 8.3.0
+ */
+export interface TextBlock {
+  /**
+   * The recognized text of the block.
+   *
+   * @since 8.3.0
+   */
+  text: string;
+  /**
+   * The four corner points of the block in clockwise order starting with
+   * top-left, in the same coordinate space as `Barcode.cornerPoints`
+   * (screen pixels of the camera preview).
+   *
+   * @since 8.3.0
+   */
+  cornerPoints?: [
+    [number, number],
+    [number, number],
+    [number, number],
+    [number, number],
+  ];
+  /**
+   * The lines of the block.
+   *
+   * @since 8.3.0
+   */
+  lines: TextLine[];
+}
+
+/**
+ * A single line of text recognized in a camera frame.
+ *
+ * @since 8.3.0
+ */
+export interface TextLine {
+  /**
+   * The recognized text of the line.
+   *
+   * @since 8.3.0
+   */
+  text: string;
+  /**
+   * The four corner points of the line in clockwise order starting with
+   * top-left, in the same coordinate space as `Barcode.cornerPoints`
+   * (screen pixels of the camera preview).
+   *
+   * @since 8.3.0
+   */
+  cornerPoints?: [
+    [number, number],
+    [number, number],
+    [number, number],
+    [number, number],
+  ];
 }
 
 /**

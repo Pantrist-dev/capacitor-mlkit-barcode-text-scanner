@@ -24,6 +24,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.text.Text;
 import io.capawesome.capacitorjs.plugins.mlkit.barcodescanning.classes.options.SetZoomRatioOptions;
 import io.capawesome.capacitorjs.plugins.mlkit.barcodescanning.classes.results.GetMaxZoomRatioResult;
 import io.capawesome.capacitorjs.plugins.mlkit.barcodescanning.classes.results.GetMinZoomRatioResult;
@@ -43,6 +44,7 @@ public class BarcodeScannerPlugin extends Plugin {
 
     public static final String BARCODE_SCANNED_EVENT = "barcodeScanned";
     public static final String BARCODES_SCANNED_EVENT = "barcodesScanned";
+    public static final String TEXT_SCANNED_EVENT = "textScanned";
     public static final String SCAN_ERROR_EVENT = "scanError";
     public static final String GOOGLE_BARCODE_SCANNER_MODULE_INSTALL_PROGRESS_EVENT = "googleBarcodeScannerModuleInstallProgress";
     public static final String ERROR_SCAN_CANCELED = "scan canceled.";
@@ -52,6 +54,7 @@ public class BarcodeScannerPlugin extends Plugin {
     public static final String ERROR_LOAD_IMAGE_FAILED = "The image could not be loaded.";
     public static final String ERROR_ZOOM_RATIO_MISSING = "zoomRatio must be provided.";
     public static final String ERROR_NO_ACTIVE_SCAN_SESSION = "There is no active scan session.";
+    public static final String ERROR_ENABLED_MISSING = "enabled must be provided.";
     public static final String ERROR_GOOGLE_BARCODE_SCANNER_MODULE_NOT_AVAILABLE =
         "The Google Barcode Scanner Module is not available. You must install it first using the installGoogleBarcodeScannerModule method.";
     public static final String ERROR_GOOGLE_BARCODE_SCANNER_MODULE_ALREADY_INSTALLED =
@@ -82,6 +85,8 @@ public class BarcodeScannerPlugin extends Plugin {
             scanSettings.formats = formats;
             scanSettings.lensFacing = lensFacing;
             scanSettings.resolution = BarcodeScannerHelper.convertIntegerToResolution(call.getInt("resolution", 1));
+            scanSettings.textRecognition = call.getBoolean("textRecognition", false);
+            scanSettings.textRecognitionInterval = Math.max(0, call.getInt("textRecognitionInterval", 250));
 
             boolean granted = implementation.requestCameraPermissionIfNotDetermined(call);
             if (!granted) {
@@ -456,6 +461,31 @@ public class BarcodeScannerPlugin extends Plugin {
         }
     }
 
+    @PluginMethod
+    public void isTextRecognitionAvailable(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("available", true);
+        call.resolve(result);
+    }
+
+    @PluginMethod
+    public void setTextRecognitionEnabled(PluginCall call) {
+        Boolean enabled = call.getBoolean("enabled");
+        if (enabled == null) {
+            call.reject(ERROR_ENABLED_MISSING);
+            return;
+        }
+        getActivity().runOnUiThread(() -> {
+            try {
+                implementation.setTextRecognitionEnabled(enabled);
+                call.resolve();
+            } catch (Exception exception) {
+                Logger.error(TAG, exception.getMessage(), exception);
+                call.reject(exception.getMessage());
+            }
+        });
+    }
+
     @PermissionCallback
     private void cameraPermissionsCallback(PluginCall call) {
         if (call.getMethodName().equals("startScan")) {
@@ -488,6 +518,16 @@ public class BarcodeScannerPlugin extends Plugin {
             JSObject result = new JSObject();
             result.put("barcodes", barcodesResult);
             notifyListeners(BARCODES_SCANNED_EVENT, result);
+        } catch (Exception exception) {
+            Logger.error(TAG, exception.getMessage(), exception);
+        }
+    }
+
+    public void notifyTextScannedListener(Text text, Point imageSize) {
+        try {
+            Point screenSize = this.getScreenSize();
+            JSObject result = BarcodeScannerHelper.createTextResult(text, imageSize, screenSize);
+            notifyListeners(TEXT_SCANNED_EVENT, result);
         } catch (Exception exception) {
             Logger.error(TAG, exception.getMessage(), exception);
         }

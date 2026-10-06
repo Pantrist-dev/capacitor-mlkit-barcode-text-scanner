@@ -5,6 +5,7 @@ import Foundation
 import Capacitor
 import AVFoundation
 import MLKitBarcodeScanning
+import MLKitTextRecognition
 
 /**
  * Please read the Capacitor iOS Plugin Development Guide
@@ -23,8 +24,11 @@ public class BarcodeScannerPlugin: CAPPlugin {
     public let errorZoomRatioMissing = "zoomRatio must be provided."
     public let errorPermissionDenied = "User denied access to camera."
     public let errorOpenSettingsFailed = "Cannot open settings."
+    public let errorEnabledMissing = "enabled must be provided."
+    public let errorNoActiveScanSession = "There is no active scan session."
     public let barcodeScannedEvent = "barcodeScanned"
     public let barcodesScannedEvent = "barcodesScanned"
+    public let textScannedEvent = "textScanned"
 
     private var implementation: BarcodeScanner?
 
@@ -40,8 +44,12 @@ public class BarcodeScannerPlugin: CAPPlugin {
         let resolutionOption = call.getInt("resolution", 1)
         let resolution = BarcodeScannerHelper.convertIntToCapturePreset(resolutionOption)
         let enableMultitaskingCameraAccess = call.getBool("enableMultitaskingCameraAccess") ?? false
+        let textRecognition = call.getBool("textRecognition") ?? false
+        let textRecognitionInterval = max(0, call.getInt("textRecognitionInterval") ?? 250)
 
         let settings = ScanSettings()
+        settings.textRecognition = textRecognition
+        settings.textRecognitionInterval = TimeInterval(textRecognitionInterval) / 1000
         settings.showUIElements = false
         settings.formats = formats
         settings.lensFacing = lensFacing
@@ -222,6 +230,26 @@ public class BarcodeScannerPlugin: CAPPlugin {
         })
     }
 
+    @objc func isTextRecognitionAvailable(_ call: CAPPluginCall) {
+        call.resolve([
+            "available": true
+        ])
+    }
+
+    @objc func setTextRecognitionEnabled(_ call: CAPPluginCall) {
+        guard let enabled = call.getBool("enabled") else {
+            call.reject(errorEnabledMissing)
+            return
+        }
+        implementation?.setTextRecognitionEnabled(enabled, completion: { errorMessage in
+            if let errorMessage = errorMessage {
+                call.reject(errorMessage)
+                return
+            }
+            call.resolve()
+        })
+    }
+
     @objc func isGoogleBarcodeScannerModuleAvailable(_ call: CAPPluginCall) {
         rejectCallAsUnimplemented(call)
     }
@@ -264,6 +292,11 @@ public class BarcodeScannerPlugin: CAPPlugin {
         var result = JSObject()
         result["barcodes"] = barcodesResult
         notifyListeners(barcodesScannedEvent, data: result)
+    }
+
+    func notifyTextScannedListener(text: MLKitText, imageSize: CGSize, videoOrientation: AVCaptureVideoOrientation?) {
+        let result = BarcodeScannerHelper.createTextResult(text, imageSize: imageSize, videoOrientation: videoOrientation)
+        notifyListeners(textScannedEvent, data: result)
     }
 }
 

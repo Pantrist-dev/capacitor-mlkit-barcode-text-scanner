@@ -6,11 +6,13 @@ import AVFoundation
 import UIKit
 import Capacitor
 import MLKitBarcodeScanning
+import MLKitTextRecognition
 import MLKitVision
 
 // swiftlint:disable class_delegate_protocol
 public protocol BarcodeScannerViewDelegate {
     func onBarcodesDetected(barcodes: [Barcode], imageSize: CGSize, videoOrientation: AVCaptureVideoOrientation?)
+    func onTextDetected(text: MLKitText, imageSize: CGSize, videoOrientation: AVCaptureVideoOrientation?)
     func onCancel()
     func onTorchToggle()
 }
@@ -19,12 +21,18 @@ public protocol BarcodeScannerViewDelegate {
     public var delegate: BarcodeScannerViewDelegate?
 
     private let implementation: BarcodeScanner
-    private let settings: ScanSettings
+    let settings: ScanSettings
     private var captureDevice: AVCaptureDevice?
     private var captureSession: AVCaptureSession?
     private var barcodeScannerInstance: MLKitBarcodeScanner?
+    // Text recognition state, see BarcodeScannerView+TextRecognition.swift.
+    // Read on the video output queue, written on the main queue.
+    var textRecognizerInstance: MLKitTextRecognizer?
+    let textRecognitionLock = NSLock()
+    var isTextRecognitionEnabled = false
+    var lastTextRecognitionTime: CFAbsoluteTime = 0
     private var videoPreviewLayer: AVCaptureVideoPreviewLayer?
-    private var videoOrientation: AVCaptureVideoOrientation?
+    var videoOrientation: AVCaptureVideoOrientation?
     private var cancelButton: UIButton?
     private var torchButton: UIButton?
     private var detectionAreaView: UIView?
@@ -35,6 +43,8 @@ public protocol BarcodeScannerViewDelegate {
         self.settings = settings
 
         super.init(frame: UIScreen.main.bounds)
+
+        self.isTextRecognitionEnabled = settings.textRecognition
 
         // Set autoresizing mask to fill the screen
         // This is necessary for the view to resize when the device orientation changes
@@ -153,7 +163,9 @@ public protocol BarcodeScannerViewDelegate {
         self.removeVideoPreviewLayer()
         self.stopCaptureSession()
         self.barcodeScannerInstance = nil
+        self.textRecognizerInstance = nil
     }
+
 
     // `setSampleBufferDelegate(self, ...)` gives the capture session a strong reference back to
     // this view, so `deinit` isn't guaranteed to run when the view is removed - the old session
@@ -197,6 +209,18 @@ public protocol BarcodeScannerViewDelegate {
         visionImage.orientation = imageOrientation(
             videoOrientation: self.videoOrientation,
             cameraPosition: AVCaptureDevice.Position.back)
+        guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+            CAPLog.print("imageBuffer is nil")
+            return
+        }
+        let imageWidth = CVPixelBufferGetWidth(imageBuffer)
+        let imageHeight = CVPixelBufferGetHeight(imageBuffer)
+        let imageSize = CGSize(width: imageWidth, height: imageHeight)
+        detectBarcodes(in: visionImage, imageSize: imageSize, barcodeScannerInstance: barcodeScannerInstance)
+        recognizeTextIfDue(in: visionImage, imageSize: imageSize)
+    }
+
+    private func detectBarcodes(in visionImage: VisionImage, imageSize: CGSize, barcodeScannerInstance: MLKitBarcodeScanner) {
         var barcodes: [Barcode] = []
         do {
             barcodes = try barcodeScannerInstance.results(in: visionImage)
@@ -206,13 +230,6 @@ public protocol BarcodeScannerViewDelegate {
         if barcodes.isEmpty {
             return
         }
-        guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
-            CAPLog.print("imageBuffer is nil")
-            return
-        }
-        let imageWidth = CVPixelBufferGetWidth(imageBuffer)
-        let imageHeight = CVPixelBufferGetHeight(imageBuffer)
-        let imageSize = CGSize(width: imageWidth, height: imageHeight)
         if let detectionAreaViewFrame = self.detectionAreaViewFrame {
             barcodes = filterBarcodesOutsideTheDetectionArea(barcodes, imageSize: imageSize,
                                                              detectionArea: detectionAreaViewFrame, videoOrientation: videoOrientation)

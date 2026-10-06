@@ -13,6 +13,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.Image;
 import android.net.Uri;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.view.Display;
 import android.view.ViewGroup;
@@ -33,6 +34,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
+import com.getcapacitor.Logger;
 import com.getcapacitor.PermissionState;
 import com.getcapacitor.PluginCall;
 import com.google.android.gms.common.moduleinstall.InstallStatusListener;
@@ -40,6 +42,8 @@ import com.google.android.gms.common.moduleinstall.ModuleInstall;
 import com.google.android.gms.common.moduleinstall.ModuleInstallClient;
 import com.google.android.gms.common.moduleinstall.ModuleInstallRequest;
 import com.google.android.gms.common.moduleinstall.ModuleInstallStatusUpdate;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
 import com.google.mlkit.vision.barcode.BarcodeScanning;
@@ -47,6 +51,10 @@ import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanner;
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning;
 import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.text.Text;
+import com.google.mlkit.vision.text.TextRecognition;
+import com.google.mlkit.vision.text.TextRecognizer;
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 import io.capawesome.capacitorjs.plugins.mlkit.barcodescanning.classes.options.SetZoomRatioOptions;
 import io.capawesome.capacitorjs.plugins.mlkit.barcodescanning.classes.results.GetMaxZoomRatioResult;
 import io.capawesome.capacitorjs.plugins.mlkit.barcodescanning.classes.results.GetMinZoomRatioResult;
@@ -65,6 +73,13 @@ public class BarcodeScanner implements ImageAnalysis.Analyzer {
 
     @Nullable
     private com.google.mlkit.vision.barcode.BarcodeScanner barcodeScannerInstance;
+
+    @Nullable
+    private TextRecognizer textRecognizerInstance;
+
+    private boolean isTextRecognitionEnabled = false;
+
+    private long lastTextRecognitionTimestamp = 0;
 
     @Nullable
     private ProcessCameraProvider processCameraProvider;
@@ -114,6 +129,8 @@ public class BarcodeScanner implements ImageAnalysis.Analyzer {
 
         BarcodeScannerOptions options = buildBarcodeScannerOptions(scanSettings);
         barcodeScannerInstance = BarcodeScanning.getClient(options);
+        isTextRecognitionEnabled = scanSettings.textRecognition;
+        lastTextRecognitionTimestamp = 0;
 
         ResolutionSelector resolutionSelector = new ResolutionSelector.Builder()
             .setResolutionStrategy(new ResolutionStrategy(scanSettings.resolution, ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER))
@@ -179,8 +196,24 @@ public class BarcodeScanner implements ImageAnalysis.Analyzer {
             previewView = null;
         }
         barcodeScannerInstance = null;
+        if (textRecognizerInstance != null) {
+            textRecognizerInstance.close();
+            textRecognizerInstance = null;
+        }
+        isTextRecognitionEnabled = false;
         scanSettings = null;
         barcodeRawValueVotes.clear();
+    }
+
+    /**
+     * Must run on UI thread.
+     */
+    public void setTextRecognitionEnabled(boolean enabled) throws Exception {
+        if (scanSettings == null) {
+            throw new Exception(BarcodeScannerPlugin.ERROR_NO_ACTIVE_SCAN_SESSION);
+        }
+        isTextRecognitionEnabled = enabled;
+        lastTextRecognitionTimestamp = 0;
     }
 
     public void readBarcodesFromImage(String path, ScanSettings scanSettings, ReadBarcodesFromImageResultCallback callback)
@@ -356,7 +389,8 @@ public class BarcodeScanner implements ImageAnalysis.Analyzer {
 
         InputImage inputImage = InputImage.fromMediaImage(image, imageProxy.getImageInfo().getRotationDegrees());
         Point imageSize = new Point(inputImage.getWidth(), inputImage.getHeight());
-        barcodeScannerInstance
+        List<Task<?>> tasks = new ArrayList<>();
+        Task<List<Barcode>> barcodeTask = barcodeScannerInstance
             .process(inputImage)
             .addOnSuccessListener(barcodes -> {
                 if (scanSettings == null) {
@@ -373,10 +407,51 @@ public class BarcodeScanner implements ImageAnalysis.Analyzer {
             })
             .addOnFailureListener(exception -> {
                 handleScanError(exception);
+            });
+        tasks.add(barcodeTask);
+        Task<Text> textTask = recognizeTextIfDue(inputImage, imageSize);
+        if (textTask != null) {
+            tasks.add(textTask);
+        }
+        // The frame must stay open until every detector is done with it.
+        Tasks.whenAllComplete(tasks).addOnCompleteListener(task -> {
+            imageProxy.close();
+            image.close();
+        });
+    }
+
+    /**
+     * Runs text recognition on the frame if it is enabled and the configured
+     * interval since the last pass has elapsed. Returns null otherwise.
+     */
+    @Nullable
+    private Task<Text> recognizeTextIfDue(@NonNull InputImage inputImage, @NonNull Point imageSize) {
+        if (!isTextRecognitionEnabled || scanSettings == null) {
+            return null;
+        }
+        long now = SystemClock.elapsedRealtime();
+        if (lastTextRecognitionTimestamp != 0 && now - lastTextRecognitionTimestamp < scanSettings.textRecognitionInterval) {
+            return null;
+        }
+        lastTextRecognitionTimestamp = now;
+        if (textRecognizerInstance == null) {
+            textRecognizerInstance = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+        }
+        return textRecognizerInstance
+            .process(inputImage)
+            .addOnSuccessListener(text -> {
+                if (scanSettings == null || !isTextRecognitionEnabled) {
+                    // Scanning or text recognition stopped while processing the image
+                    return;
+                }
+                if (text.getTextBlocks().isEmpty()) {
+                    return;
+                }
+                plugin.notifyTextScannedListener(text, imageSize);
             })
-            .addOnCompleteListener(task -> {
-                imageProxy.close();
-                image.close();
+            .addOnFailureListener(exception -> {
+                // Not reported as a scan error: barcode scanning keeps working without text recognition.
+                Logger.error(BarcodeScannerPlugin.TAG, "Text recognition failed: " + exception.getMessage(), exception);
             });
     }
 

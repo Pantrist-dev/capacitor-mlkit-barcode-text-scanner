@@ -10,6 +10,7 @@ ext {
     listenableFutureVersion = project.hasProperty('listenableFutureVersion') ? rootProject.ext.listenableFutureVersion : '1.0'
     mlkitBarcodeScanningVersion = project.hasProperty('mlkitBarcodeScanningVersion') ? rootProject.ext.mlkitBarcodeScanningVersion : '17.3.0'
     playServicesCodeScannerVersion = project.hasProperty('playServicesCodeScannerVersion') ? rootProject.ext.playServicesCodeScannerVersion : '16.1.0'
+    mlkitTextRecognitionVersion = project.hasProperty('mlkitTextRecognitionVersion') ? rootProject.ext.mlkitTextRecognitionVersion : '19.0.1'
 }
 
 buildscript {
@@ -66,6 +67,7 @@ dependencies {
     implementation "com.google.guava:listenablefuture:$listenableFutureVersion"
     implementation "com.google.mlkit:barcode-scanning:$mlkitBarcodeScanningVersion"
     implementation "com.google.android.gms:play-services-code-scanner:$playServicesCodeScannerVersion"
+    implementation "com.google.android.gms:play-services-mlkit-text-recognition:$mlkitTextRecognitionVersion"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
