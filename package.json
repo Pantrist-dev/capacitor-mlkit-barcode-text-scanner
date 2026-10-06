@@ -49,13 +49,12 @@
     "eslint": "eslint . --ext ts",
     "prettier": "prettier \"**/*.{css,html,ts,js,java}\"",
     "swiftlint": "node-swiftlint",
-    "docgen": "docgen --api BarcodeScannerPlugin --output-readme README.md --output-json dist/docs.json",
+    "docgen": "patch-package && docgen --api BarcodeScannerPlugin --output-readme README.md --output-json dist/docs.json",
     "build": "npm run clean && npm run docgen && tsc && rollup -c rollup.config.mjs",
     "clean": "rimraf ./dist",
     "watch": "tsc --watch",
     "ios:pod:install": "cd ios && pod install --repo-update && cd ..",
-    "prepublishOnly": "npm run build",
-    "postinstall": "patch-package"
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
     "@capacitor/android": "8.0.0",
