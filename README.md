@@ -1,15 +1,25 @@
-# Capacitor ML Kit Barcode Scanning Plugin
+# Capacitor ML Kit Barcode & Text Scanner
 
-Unofficial Capacitor plugin for [ML Kit Barcode Scanning](https://developers.google.com/ml-kit/vision/barcode-scanning).[^1][^2]
+Capacitor plugin for [ML Kit Barcode Scanning](https://developers.google.com/ml-kit/vision/barcode-scanning) that can also read text in the same live camera session, using [ML Kit Text Recognition](https://developers.google.com/ml-kit/vision/text-recognition/v2).[^1][^2]
 
-> [!TIP]
-> Looking for Swift Package Manager (SPM) support, a themeable fullscreen scanner UI on both Android and iOS, or an [embedded camera view](https://capawesome.io/blog/capacitor-embedded-barcode-scanner/)? Take a look at our new [Barcode Scanner plugin](https://capawesome.io/docs/sdks/capacitor/barcode-scanner/) for [Capawesome Insiders](https://capawesome.io/insiders/) — a separate plugin that replaces ML Kit with AVFoundation and Vision on iOS.
+> [!NOTE]
+> This plugin is a fork of [`@capacitor-mlkit/barcode-scanning`](https://github.com/capawesome-team/capacitor-mlkit/tree/main/packages/barcode-scanning) by [Capawesome](https://capawesome.io/) (Robin Genz), licensed under Apache 2.0. All barcode scanning features, the API and most of this documentation come from there, so thanks to Capawesome for the great work. Have a look at their [other Capacitor plugins](https://capawesome.io/docs/sdks/capacitor/) too.
+>
+> The fork adds optional live text recognition, built for reading best-before dates while scanning a product barcode in [Pantrist](https://github.com/Pantrist-dev). If you only need barcodes, use the original plugin.
 
-<div class="capawesome-z29o10a">
-  <a href="https://capawesome.io/" target="_blank">
-    <img alt="Try Capawesome Cloud free for 14 days — iOS builds without a Mac" src="https://capawesome.io/assets/banners/cloud-free-trial-capacitor-apps.png" />
-  </a>
-</div>
+## What this fork adds
+
+- **`textRecognition`** option for `startScan(...)`: runs ML Kit text recognition (Latin script) on the same camera frames as the barcode scanner, without a second camera session.
+- **`textScanned`** event with the recognized text blocks and lines. Every block and line has corner points in the same screen coordinate space as `Barcode.cornerPoints`, so text can be outlined on top of the preview exactly like barcodes.
+- **`textRecognitionInterval`** option: text recognition is much slower than barcode scanning, so it runs at most once per interval (default 250 ms) instead of on every frame.
+- **`setTextRecognitionEnabled(...)`** turns text recognition on and off during a running scan, without restarting the camera. Turn it off as soon as you have what you need.
+- **`isTextRecognitionAvailable()`** tells whether the platform supports it.
+
+The plugin does not interpret the text. Finding a date, a price or anything else in it is up to the app.
+
+Text recognition is available on Android and iOS. On the web the plugin scans barcodes only.
+
+The fork keeps the native plugin name `BarcodeScanner` and the original class names, so the JavaScript API is a drop-in replacement: switching only means replacing the package and the import. For the same reason, the original plugin and this fork cannot be installed side by side.
 
 ## Features
 
@@ -19,6 +29,7 @@ Unofficial Capacitor plugin for [ML Kit Barcode Scanning](https://developers.goo
 - ⏺️ Define detection area
 - 🏞️ Reading barcodes from images
 - 🔦 Torch and Autofocus support
+- 🔤 Live text recognition in the same camera session (Android and iOS)
 - 🔋 Supports Android, iOS and web
 
 For a complete list of **supported barcodes**, see [BarcodeFormat](#barcodeformat).
@@ -38,46 +49,24 @@ The Barcode Scanning plugin is typically used whenever an app needs to read a ba
 | Plugin Version | Capacitor Version | Status         |
 | -------------- | ----------------- | -------------- |
 | 8.x.x          | >=8.x.x           | Active support |
-| 7.x.x          | 7.x.x             | Deprecated     |
-| 6.x.x          | 6.x.x             | Deprecated     |
-| 5.x.x          | 5.x.x             | Deprecated     |
 
-## Demo
-
-A working example can be found here: [https://github.com/robingenz/capacitor-mlkit-plugin-demo](https://github.com/robingenz/capacitor-mlkit-plugin-demo)
-
-| Android                                                                                                                         |
-| ------------------------------------------------------------------------------------------------------------------------------- |
-| <img src="https://user-images.githubusercontent.com/13857929/224423595-b7e97595-8b2b-4cd7-b500-b30e10e11dfc.gif" width="324" alt="Android demo of the ML Kit Barcode Scanning plugin" /> |
+Version 8.3.0 is the first release of this fork. It is based on `@capacitor-mlkit/barcode-scanning` 8.2.1.
 
 ## Guides
+
+The guides for the original plugin apply to the barcode part of this one as well:
 
 - [Announcing the Capacitor ML Kit Barcode Scanning Plugin](https://capawesome.io/blog/announcing-the-capacitor-mlkit-barcode-scanner-plugin/)
 - [How to build an Ionic Barcode Scanner with Capacitor](https://capawesome.io/blog/how-to-build-an-ionic-barcode-scanner-with-capacitor/)
 
 ## Installation
 
-You can use our **AI-Assisted Setup** to install the plugin.
-Add the [Capawesome Skills](https://github.com/capawesome-team/skills) to your AI tool using the following command:
-
 ```bash
-npx skills add capawesome-team/skills --skill capacitor-plugins
-```
-
-Then use the following prompt:
-
-```
-Use the `capacitor-plugins` skill from `capawesome-team/skills` to install the `@capacitor-mlkit/barcode-scanning` plugin in my project.
-```
-
-If you prefer **Manual Setup**, install the plugin by running the following commands and follow the platform-specific instructions below:
-
-```bash
-npm install @capacitor-mlkit/barcode-scanning
+npm install @pantrist/capacitor-mlkit-barcode-text-scanner
 npx cap sync
 ```
 
-**Attention**: This plugin **only supports CocoaPods** for iOS dependency management. Swift Package Manager (SPM) is not supported for the ML Kit SDK, see [this comment](https://github.com/googlesamples/mlkit/issues/180#issuecomment-1298964099). If you need SPM support, take a look at our new [Barcode Scanner plugin](https://capawesome.io/docs/sdks/capacitor/barcode-scanner/), which uses AVFoundation and Vision instead of ML Kit on iOS.
+**Attention**: This plugin **only supports CocoaPods** for iOS dependency management. Swift Package Manager (SPM) is not supported for the ML Kit SDK, see [this comment](https://github.com/googlesamples/mlkit/issues/180#issuecomment-1298964099). If you need SPM support and no text recognition, take a look at Capawesome's [Barcode Scanner plugin](https://capawesome.io/docs/sdks/capacitor/barcode-scanner/), which uses AVFoundation and Vision instead of ML Kit on iOS.
 
 ### Android
 
@@ -92,9 +81,11 @@ This API requires the following permissions be added to your `AndroidManifest.xm
 You also need to add the following meta data **in** the `application` tag in your `AndroidManifest.xml`:
 
 ```xml
-<meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui"/>
+<meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui,ocr"/>
 <!-- To use multiple models: android:value="face,model2,model3" -->
 ```
+
+`barcode_ui` is the model of the ready-to-use interface (`scan(...)`), `ocr` the one of text recognition. On Android, text recognition uses the model of Google Play Services. Listing `ocr` here makes Play Services download it when the app is installed. Without it, the model is downloaded on first use, and until it is there (or while the device is offline) text recognition reports nothing. Barcode scanning is not affected either way.
 
 #### Variables
 
@@ -107,6 +98,7 @@ If needed, you can define the following project variable in your app’s `variab
 - `$listenableFutureVersion` version of `com.google.guava:listenablefuture` (default: `1.0`)
 - `$mlkitBarcodeScanningVersion` version of `com.google.mlkit:barcode-scanning` (default: `17.3.0`)
 - `$playServicesCodeScannerVersion` version of `com.google.android.gms:play-services-code-scanner` (default: `16.1.0`)
+- `$mlkitTextRecognitionVersion` version of `com.google.android.gms:play-services-mlkit-text-recognition` (default: `19.0.1`)
 
 This can be useful if you encounter dependency conflicts with other plugins in your project.
 
@@ -119,6 +111,10 @@ Make sure to set the deployment target in your `ios/App/Podfile` to at least `15
 ```ruby
 platform :ios, '15.5'
 ```
+
+#### Text recognition
+
+Text recognition adds the `GoogleMLKit/TextRecognition` pod, which makes the app bundle larger. It is bundled with the app, so it works offline from the first scan.
 
 ### Usage Description
 
@@ -149,10 +145,6 @@ import "barcode-detector/polyfill";
 
 No configuration required for this plugin.
 
-## Demo
-
-A working example can be found here: [robingenz/capacitor-mlkit-plugin-demo](https://github.com/robingenz/capacitor-mlkit-plugin-demo)
-
 ## Usage
 
 The following examples show how to scan barcodes with your own UI or the ready-to-use interface, control the torch and zoom, install the Google Barcode Scanner module, and manage camera permissions.
@@ -162,12 +154,12 @@ The following examples show how to scan barcodes with your own UI or the ready-t
 The `startScan(...)` method renders the camera behind the WebView so that you can build your own scanning UI on top of it. Add a listener to be notified about scanned barcodes and call `stopScan()` when you are done:
 
 ```typescript
-import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { BarcodeScanner } from '@pantrist/capacitor-mlkit-barcode-text-scanner';
 
 const startScan = async () => {
   // The camera is visible behind the WebView, so that you can customize the UI in the WebView.
   // However, this means that you have to hide all elements that should not be visible.
-  // You can find an example in our demo repository.
+  // You can find an example in the demo repository of the original plugin (robingenz/capacitor-mlkit-plugin-demo).
   // In this case we set a class `barcode-scanner-active`, which then contains certain CSS rules for our app.
   document.querySelector('body')?.classList.add('barcode-scanner-active');
 
@@ -195,12 +187,49 @@ const stopScan = async () => {
 };
 ```
 
+### Read text while scanning
+
+Pass `textRecognition: true` to `startScan(...)` and listen for `textScanned`. Every event holds the text of one camera frame, split into blocks and lines with their corner points:
+
+```typescript
+import { BarcodeScanner } from '@pantrist/capacitor-mlkit-barcode-text-scanner';
+
+const startScan = async () => {
+  document.querySelector('body')?.classList.add('barcode-scanner-active');
+
+  await BarcodeScanner.addListener('barcodesScanned', ({ barcodes }) => {
+    console.log('Barcodes', barcodes);
+  });
+  await BarcodeScanner.addListener('textScanned', ({ blocks }) => {
+    for (const line of blocks.flatMap(block => block.lines)) {
+      // `cornerPoints` share the coordinate space of `Barcode.cornerPoints`.
+      console.log(line.text, line.cornerPoints);
+    }
+  });
+
+  await BarcodeScanner.startScan({
+    textRecognition: true,
+    // Text recognition is expensive, run it at most every 250 ms.
+    textRecognitionInterval: 250,
+  });
+};
+
+// Stop reading text once you have what you need, the barcode scanner keeps running.
+const stopReadingText = async () => {
+  await BarcodeScanner.setTextRecognitionEnabled({ enabled: false });
+};
+```
+
+OCR results are noisy: the same text can come out slightly different from one frame to the next. Accept a result only after it was read the same way in a few frames, the way the barcode scanner itself waits for several matching frames before it reports a barcode.
+
+`textScanned` is only emitted for frames that contain text. Check `isTextRecognitionAvailable()` before you rely on it, it returns `false` on the web.
+
 ### Scan a single barcode
 
 If you only need one result, remove the listener and stop the scan as soon as the first barcode is scanned:
 
 ```typescript
-import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { BarcodeScanner } from '@pantrist/capacitor-mlkit-barcode-text-scanner';
 
 const scanSingleBarcode = async () => {
   return new Promise(async resolve => {
@@ -228,7 +257,7 @@ const scanSingleBarcode = async () => {
 The `scan(...)` method opens a ready-to-use scanning interface without any WebView customization. Only available on Android and iOS. On Android, this requires the Google Barcode Scanner module (see [below](#install-the-google-barcode-scanner-module)), but no camera permission:
 
 ```typescript
-import { BarcodeScanner, BarcodeFormat } from '@capacitor-mlkit/barcode-scanning';
+import { BarcodeScanner, BarcodeFormat } from '@pantrist/capacitor-mlkit-barcode-text-scanner';
 
 const scan = async () => {
   const { barcodes } = await BarcodeScanner.scan({
@@ -261,7 +290,7 @@ App.addListener('appRestoredResult', event => {
 Check whether the device has a camera that can be used for barcode scanning:
 
 ```typescript
-import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { BarcodeScanner } from '@pantrist/capacitor-mlkit-barcode-text-scanner';
 
 const isSupported = async () => {
   const { supported } = await BarcodeScanner.isSupported();
@@ -304,7 +333,7 @@ const isTorchAvailable = async () => {
 Set and read the zoom ratio of the camera. These methods are only available on Android and iOS:
 
 ```typescript
-import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { BarcodeScanner } from '@pantrist/capacitor-mlkit-barcode-text-scanner';
 
 const setZoomRatio = async () => {
   await BarcodeScanner.setZoomRatio({ zoomRatio: 0.5 });
@@ -331,7 +360,7 @@ const getMaxZoomRatio = async () => {
 On Android, the `scan(...)` method requires the Google Barcode Scanner module. Check if it is available and install it if needed. The installation only starts with this call; the `googleBarcodeScannerModuleInstallProgress` event notifies you about the progress. Only available on Android:
 
 ```typescript
-import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { BarcodeScanner } from '@pantrist/capacitor-mlkit-barcode-text-scanner';
 
 const isGoogleBarcodeScannerModuleAvailable = async () => {
   const { available } =
@@ -349,7 +378,7 @@ const installGoogleBarcodeScannerModule = async () => {
 The `startScan(...)` method requires the camera permission. You can check and request it, and open the app settings so that the user can grant the permission manually:
 
 ```typescript
-import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { BarcodeScanner } from '@pantrist/capacitor-mlkit-barcode-text-scanner';
 
 const checkPermissions = async () => {
   const { camera } = await BarcodeScanner.checkPermissions();
@@ -1403,17 +1432,13 @@ This plugin uses the [Google ML Kit](https://developers.google.com/ml-kit):
 - [Android Data Disclosure](https://developers.google.com/ml-kit/android-data-disclosure)
 - [iOS Data Disclosure](https://developers.google.com/ml-kit/ios-data-disclosure)
 
-## Newsletter
-
-Stay up to date with the latest news and updates about the Capawesome, Capacitor, and Ionic ecosystem by subscribing to our [Capawesome Newsletter](https://cloud.capawesome.io/newsletter/).
-
 ## Changelog
 
-See [CHANGELOG.md](https://github.com/capawesome-team/capacitor-mlkit/blob/main/packages/barcode-scanning/CHANGELOG.md).
+See [CHANGELOG.md](./CHANGELOG.md). It continues the changelog of the original plugin.
 
 ## License
 
-See [LICENSE](https://github.com/capawesome-team/capacitor-mlkit/blob/main/packages/barcode-scanning/LICENSE).
+Apache 2.0, see [LICENSE](./LICENSE). Based on [`@capacitor-mlkit/barcode-scanning`](https://github.com/capawesome-team/capacitor-mlkit/tree/main/packages/barcode-scanning), copyright Robin Genz.
 
 [^1]: This project is not affiliated with, endorsed by, sponsored by, or approved by Google LLC or any of their affiliates or subsidiaries.
 [^2]: `QR Code` is a registered trademark of DENSO WAVE INCORPORATED.

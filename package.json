@@ -1,7 +1,7 @@
 {
-  "name": "@capacitor-mlkit/barcode-scanning",
-  "version": "8.2.1",
-  "description": "Capacitor plugin for ML Kit Barcode Scanning on Android, iOS, and Web.",
+  "name": "@pantrist/capacitor-mlkit-barcode-text-scanner",
+  "version": "8.3.0",
+  "description": "Capacitor plugin for ML Kit Barcode Scanning on Android, iOS and Web, with optional live text recognition in the same camera session. Fork of @capacitor-mlkit/barcode-scanning by Capawesome.",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
   "types": "dist/esm/index.d.ts",
@@ -11,28 +11,18 @@
     "android/build.gradle",
     "dist/",
     "ios/Plugin/",
-    "CapacitorMlkitBarcodeScanning.podspec"
+    "PantristCapacitorMlkitBarcodeTextScanner.podspec"
   ],
-  "author": "Robin Genz <mail@robingenz.dev>",
+  "author": "Nico Lueg",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/capawesome-team/capacitor-mlkit.git"
+    "url": "git+https://github.com/Pantrist-dev/capacitor-mlkit-barcode-text-scanner.git"
   },
   "bugs": {
-    "url": "https://github.com/capawesome-team/capacitor-mlkit/issues"
+    "url": "https://github.com/Pantrist-dev/capacitor-mlkit-barcode-text-scanner/issues"
   },
-  "funding": [
-    {
-      "type": "github",
-      "url": "https://github.com/sponsors/capawesome-team/"
-    },
-    {
-      "type": "opencollective",
-      "url": "https://opencollective.com/capawesome"
-    }
-  ],
-  "homepage": "https://capawesome.io/docs/sdks/capacitor/mlkit/barcode-scanning",
+  "homepage": "https://github.com/Pantrist-dev/capacitor-mlkit-barcode-text-scanner#readme",
   "keywords": [
     "capacitor",
     "plugin",
@@ -44,7 +34,10 @@
     "qr code scanner",
     "qr code reader",
     "code scanner",
-    "mlkit"
+    "mlkit",
+    "text recognition",
+    "ocr",
+    "best before date"
   ],
   "scripts": {
     "verify": "npm run verify:ios && npm run verify:android && npm run verify:web",
@@ -61,7 +54,8 @@
     "clean": "rimraf ./dist",
     "watch": "tsc --watch",
     "ios:pod:install": "cd ios && pod install --repo-update && cd ..",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "postinstall": "patch-package"
   },
   "devDependencies": {
     "@capacitor/android": "8.0.0",
@@ -70,7 +64,10 @@
     "@capacitor/docgen": "0.3.1",
     "@capacitor/ios": "8.0.0",
     "@ionic/eslint-config": "0.4.0",
+    "@ionic/swiftlint-config": "2.0.0",
     "eslint": "8.57.0",
+    "patch-package": "8.0.1",
+    "prettier": "3.4.2",
     "prettier-plugin-java": "2.9.7",
     "rimraf": "6.1.2",
     "rollup": "4.62.3",
@@ -93,5 +90,8 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "contributors": [
+    "Robin Genz <mail@robingenz.dev> (original @capacitor-mlkit/barcode-scanning)"
+  ]
 }

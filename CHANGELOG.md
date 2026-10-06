@@ -1,5 +1,17 @@
 # Changelog
 
+## 8.3.0
+
+First release as `@pantrist/capacitor-mlkit-barcode-text-scanner`, a fork of `@capacitor-mlkit/barcode-scanning` 8.2.1 by Capawesome. Everything below this entry is the changelog of the original plugin.
+
+### Minor Changes
+
+- feat: optional live text recognition in the scan session: the `textRecognition` and `textRecognitionInterval` options of `startScan(...)`, `setTextRecognitionEnabled(...)`, `isTextRecognitionAvailable()` and the `textScanned` event (Android and iOS)
+
+### Patch Changes
+
+- fix: restore the original WebView background after `stopScan()` instead of forcing a white background (taken over from the unreleased original)
+
 ## 8.2.1
 
 ### Patch Changes

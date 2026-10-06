@@ -1,52 +1,27 @@
 # Contributing
 
-This guide provides instructions for contributing to this Capacitor plugin.
+## Setup
 
-## Developing
-
-### Local Setup
-
-1. Fork and clone the repo.
-1. Install the dependencies.
-
-    ```shell
-    npm install
-    ```
-
-1. Install SwiftLint if you're on macOS.
-
-    ```shell
-    brew install swiftlint
-    ```
-
-### Scripts
-
-#### `npm run build`
-
-Build the plugin web assets and generate plugin API documentation using [`@capacitor/docgen`](https://github.com/ionic-team/capacitor-docgen).
-
-It will compile the TypeScript code from `src/` into ESM JavaScript in `dist/esm/`. These files are used in apps with bundlers when your plugin is imported.
-
-Then, Rollup will bundle the code into a single file at `dist/plugin.js`. This file is used in apps without bundlers by including it as a script in `index.html`.
-
-#### `npm run verify`
-
-Build and validate the web and native projects.
-
-This is useful to run in CI to verify that the plugin builds for all platforms.
-
-#### `npm run lint` / `npm run fmt`
-
-Check formatting and code quality, autoformat/autofix if possible.
-
-This template is integrated with ESLint, Prettier, and SwiftLint. Using these tools is completely optional, but the [Capacitor Community](https://github.com/capacitor-community/) strives to have consistent code style and structure for easier cooperation.
-
-## Publishing
-
-There is a `prepublishOnly` hook in `package.json` which prepares the plugin before publishing, so all you need to do is run:
-
-```shell
-npm publish
+```bash
+npm install
 ```
 
-> **Note**: The [`files`](https://docs.npmjs.com/cli/v7/configuring-npm/package-json#files) array in `package.json` specifies which files get published. If you rename files/directories or add files elsewhere, you may need to update it.
+## Build and check
+
+- `npm run build`: compiles the web part and regenerates the API section of the README from the JSDoc in `src/definitions.ts`. Do not edit that section by hand.
+- `npm run lint`: ESLint, Prettier and SwiftLint. `npm run fmt` fixes what it can.
+- `npm run verify:android`: builds and tests the Android library.
+- `npm run verify:ios`: installs the pods and builds the iOS framework.
+
+## Changes from the original plugin
+
+This repository is a fork of [`@capacitor-mlkit/barcode-scanning`](https://github.com/capawesome-team/capacitor-mlkit/tree/main/packages/barcode-scanning) and keeps its history. To take over a fix from there, add the original as a remote and cherry-pick the commit:
+
+```bash
+git remote add capawesome https://github.com/capawesome-team/capacitor-mlkit.git
+git fetch capawesome main
+git subtree split --prefix=packages/barcode-scanning capawesome/main -b capawesome-barcode-scanning
+git cherry-pick <commit>
+```
+
+Keep the native plugin name `BarcodeScanner` and the class names of the original, so the plugin stays a drop-in replacement and fixes from the original apply cleanly.
