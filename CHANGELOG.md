@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Patch Changes
+
+- fix(web): `startScan(...)` honours the `resolution` option (default `1280x720`, as on Android and iOS) instead of leaving the camera at the browser's default, which is often 640x480 and too coarse for dense codes such as an Aztec code shown on another phone's screen
+
 ## 8.3.0
 
 First release as `@pantrist/capacitor-mlkit-barcode-text-scanner`, a fork of `@capacitor-mlkit/barcode-scanning` 8.2.1 by Capawesome. Everything below this entry is the changelog of the original plugin.

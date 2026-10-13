@@ -25,7 +25,15 @@ import type {
   SetZoomRatioOptions,
   StartScanOptions,
 } from './definitions';
-import { BarcodeValueType, LensFacing } from './definitions';
+import { BarcodeValueType, LensFacing, Resolution } from './definitions';
+
+const RESOLUTION_SIZES: Record<Resolution, { width: number; height: number }> =
+  {
+    [Resolution['640x480']]: { width: 640, height: 480 },
+    [Resolution['1280x720']]: { width: 1280, height: 720 },
+    [Resolution['1920x1080']]: { width: 1920, height: 1080 },
+    [Resolution['3840x2160']]: { width: 3840, height: 2160 },
+  };
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports
@@ -53,12 +61,17 @@ export class BarcodeScannerWeb
       throw new Error(this.errorVideoElementMissing);
     }
     this.videoElement = options.videoElement;
+    const size =
+      RESOLUTION_SIZES[options.resolution ?? Resolution['1280x720']] ??
+      RESOLUTION_SIZES[Resolution['1280x720']];
     this.stream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: {
           ideal:
             options?.lensFacing === LensFacing.Front ? 'user' : 'environment',
         },
+        width: { ideal: size.width },
+        height: { ideal: size.height },
       },
       audio: false,
     });

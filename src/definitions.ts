@@ -263,7 +263,9 @@ export interface StartScanOptions {
    *
    * If the resolution is not supported by the device, the closest supported resolution will be used.
    *
-   * Only available on Android and iOS.
+   * On the web it is a wish to the browser (`ideal` width and height), which
+   * otherwise often picks 640x480: too coarse for dense codes such as an
+   * Aztec or QR code shown on another phone's screen.
    *
    * @since 7.0.0
    * @default Resolution['1280x720']
