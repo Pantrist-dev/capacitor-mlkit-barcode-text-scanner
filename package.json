@@ -40,6 +40,8 @@
     "best before date"
   ],
   "scripts": {
+    "release": "commit-and-tag-version",
+    "release:dry": "commit-and-tag-version --dry-run",
     "verify": "npm run verify:ios && npm run verify:android && npm run verify:web",
     "verify:ios": "cd ios && pod install && xcodebuild -workspace Plugin.xcworkspace -scheme Plugin -destination generic/platform=iOS && cd ..",
     "verify:android": "cd android && ./gradlew clean build test && cd ..",
@@ -64,6 +66,7 @@
     "@capacitor/ios": "8.0.0",
     "@ionic/eslint-config": "0.4.0",
     "@ionic/swiftlint-config": "2.0.0",
+    "commit-and-tag-version": "^13.2.2",
     "eslint": "8.57.0",
     "patch-package": "8.0.1",
     "prettier": "3.4.2",
