@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.3.2](https://github.com/Pantrist-dev/capacitor-mlkit-barcode-text-scanner/compare/8.3.0...8.3.2) (2026-10-13)
+
+### Bug Fixes
+
+* **web:** honour the resolution option when starting a scan ([3e84f04](https://github.com/Pantrist-dev/capacitor-mlkit-barcode-text-scanner/commit/3e84f04687568b3b00e86fc5cdfbd75ce75a0fde))
+* **web:** scan more frames and ask for continuous focus ([6888163](https://github.com/Pantrist-dev/capacitor-mlkit-barcode-text-scanner/commit/688816390ca253eea7f3faa0b3b87ca7935cbc00))
+
 ## [8.3.1](https://github.com/Pantrist-dev/capacitor-mlkit-barcode-text-scanner/compare/8.3.0...8.3.1) (2026-10-13)
 
 ### Bug Fixes

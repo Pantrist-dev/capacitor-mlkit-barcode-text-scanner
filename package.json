@@ -1,6 +1,6 @@
 {
   "name": "@pantrist/capacitor-mlkit-barcode-text-scanner",
-  "version": "8.3.1",
+  "version": "8.3.2",
   "description": "Capacitor plugin for ML Kit Barcode Scanning on Android, iOS and Web, with optional live text recognition in the same camera session. Fork of @capacitor-mlkit/barcode-scanning by Capawesome.",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
