@@ -35,6 +35,15 @@ const RESOLUTION_SIZES: Record<Resolution, { width: number; height: number }> =
     [Resolution['3840x2160']]: { width: 3840, height: 2160 },
   };
 
+/**
+ * Pause between the end of one detection and the start of the next. A
+ * detection takes about 25 ms on a 1080p frame (Chrome on macOS), so this
+ * checks some six frames a second instead of two. Webcams without autofocus
+ * are only briefly sharp while a code is moved towards them, and every
+ * extra frame is another chance to catch that moment.
+ */
+const SCAN_PAUSE_MS = 150;
+
 declare global {
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   const BarcodeDetector: typeof import('./barcode-detector').BarcodeDetector;
@@ -49,7 +58,9 @@ export class BarcodeScannerWeb
   private readonly errorBlobMissing = 'blob must be provided.';
   private readonly eventBarcodesScanned = 'barcodesScanned';
 
-  private intervalId: number | undefined;
+  private scanTimeoutId: number | undefined;
+  /** Bumped on every start and stop, so a running scan loop ends itself. */
+  private scanSession = 0;
   private stream: MediaStream | undefined;
   private videoElement: HTMLVideoElement | undefined;
 
@@ -77,27 +88,62 @@ export class BarcodeScannerWeb
     });
     options.videoElement.srcObject = this.stream;
     await options.videoElement.play();
+    await this.enableContinuousFocus(this.stream);
     const barcodeDetector = new BarcodeDetector();
-    this.intervalId = window.setInterval(async () => {
-      if (!options.videoElement) {
+    const videoElement = options.videoElement;
+    const session = ++this.scanSession;
+    // Each detection waits for the previous one, so slow frames (the zxing
+    // polyfill on a large frame) never pile up as with a fixed interval.
+    const scanNextFrame = async (): Promise<void> => {
+      if (session !== this.scanSession) {
         return;
       }
-      const barcodes = await barcodeDetector.detect(options.videoElement);
-      if (barcodes.length === 0) {
-        return;
-      } else {
-        this.handleScannedBarcodes(barcodes);
+      try {
+        const barcodes = await barcodeDetector.detect(videoElement);
+        if (session !== this.scanSession) {
+          return;
+        }
+        if (barcodes.length > 0) {
+          this.handleScannedBarcodes(barcodes);
+        }
+      } catch {
+        // A frame that is not ready yet; the next one will be.
       }
-    }, 500);
+      this.scanTimeoutId = window.setTimeout(scanNextFrame, SCAN_PAUSE_MS);
+    };
+    this.scanTimeoutId = window.setTimeout(scanNextFrame, SCAN_PAUSE_MS);
+  }
+
+  /**
+   * Phones and some external cameras focus once and then stay put unless
+   * asked for continuous focus. Cameras that do not report the capability
+   * (most built-in laptop webcams) are left alone.
+   */
+  private async enableContinuousFocus(stream: MediaStream): Promise<void> {
+    const [track] = stream.getVideoTracks();
+    const capabilities = track?.getCapabilities?.() as
+      | { focusMode?: string[] }
+      | undefined;
+    if (!capabilities?.focusMode?.includes('continuous')) {
+      return;
+    }
+    try {
+      await track.applyConstraints({
+        advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet],
+      });
+    } catch {
+      // Not every camera that lists the mode accepts it; scanning works anyway.
+    }
   }
 
   async stopScan(): Promise<void> {
     if (!this._isSupported) {
       throw this.createUnavailableException();
     }
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = undefined;
+    this.scanSession++;
+    if (this.scanTimeoutId) {
+      clearTimeout(this.scanTimeoutId);
+      this.scanTimeoutId = undefined;
     }
     if (this.stream) {
       this.stream.getTracks().forEach(track => track.stop());
