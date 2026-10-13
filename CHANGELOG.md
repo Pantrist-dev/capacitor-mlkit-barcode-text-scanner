@@ -1,5 +1,11 @@
 # Changelog
 
+## [8.3.1](https://github.com/Pantrist-dev/capacitor-mlkit-barcode-text-scanner/compare/8.3.0...8.3.1) (2026-10-13)
+
+### Bug Fixes
+
+* **web:** honour the resolution option when starting a scan ([3e84f04](https://github.com/Pantrist-dev/capacitor-mlkit-barcode-text-scanner/commit/3e84f04687568b3b00e86fc5cdfbd75ce75a0fde))
+
 ## 8.3.0
 
 First release as `@pantrist/capacitor-mlkit-barcode-text-scanner`, a fork of `@capacitor-mlkit/barcode-scanning` 8.2.1 by Capawesome. Everything below this entry is the changelog of the original plugin.
